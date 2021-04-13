@@ -10,12 +10,14 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.fragment_list.view.*
 import kotlinx.android.synthetic.main.item_list.view.*
+import java.lang.ClassCastException
 
 class CharacterListFragment : Fragment() {
 
     private lateinit var names: Array<String>
     private lateinit var descriptions: Array<String>
     private lateinit var images: IntArray
+    private lateinit var listener: OnListSelected
 
     companion object {
         fun newInstance() = CharacterListFragment()
@@ -36,6 +38,31 @@ class CharacterListFragment : Fragment() {
         return view
     }
 
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+
+        val resources = context.resources
+        names = resources.getStringArray(R.array.names)
+        descriptions = resources.getStringArray(R.array.descriptions)
+
+        val typedArray = resources.obtainTypedArray(R.array.images)
+        val imageCount = names.size
+
+        images = IntArray(imageCount)
+
+        for(i in 0 until imageCount) {
+            images[i] = typedArray.getResourceId(i, 0)
+        }
+
+        typedArray.recycle()
+
+        if(context is OnListSelected) {
+            listener = context
+        } else {
+            throw ClassCastException("$context must be implemented")
+        }
+    }
+
     internal inner class CharacterListAdapter: RecyclerView.Adapter<ViewHolder>() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
             ViewHolder(
@@ -51,6 +78,9 @@ class CharacterListFragment : Fragment() {
                 images[position]
             )
             holder.bind(character)
+            holder.itemView.setOnClickListener{
+                listener.onSelected(character)
+            }
         }
     }
 
@@ -62,6 +92,10 @@ class CharacterListFragment : Fragment() {
                 itemView.list_name.text = character.name
             }
         }
+    }
+
+    interface OnListSelected {
+        fun onSelected(character: CharacterModel)
     }
 
 }
